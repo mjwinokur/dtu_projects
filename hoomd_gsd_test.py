@@ -57,7 +57,8 @@ tangle1 = [(tangle1[i]-1) for i in range(len(tangle1))]
 tangle2 = [(tangle2[i]-1) for i in range(len(tangle2))]
 tangle3 = [(tangle3[i]-1) for i in range(len(tangle3))]
 tangle4 = [(tangle4[i]-1) for i in range(len(tangle4))]
-#print len(pair1),len(bangle1),len(tangle1)
+print len(pair1),len(bangle1),len(tangle1)
+raw_input()
 # So we can have S-C or C-S but we use the same force field parameters
 bdtypes = []
 bdtypeid = []
