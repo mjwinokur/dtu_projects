@@ -167,4 +167,4 @@ def mm3_decode(fffile,ptypes,aatypes,bdtypes,angtypes,tortypes):
 #print amass
 # but the order is wrong
     file.close()
-    return amass,bdtypes_tot,bond1,bond2,angtypes_tot,ang1,ang2,tortypes_tot,tor1,tor2,tor3
+    return amass,bdtypes_tot,bond1,bond2,angtypes_tot,ang1,ang2,tortypes_tot,tor1,tor2,tor3,vdw1,vdw2,vdwpr1,vdwpr2

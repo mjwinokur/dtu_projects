@@ -2,7 +2,9 @@ import openbabel
 
 def btd_info(fileformat,input_name):
     obConversion = openbabel.OBConversion()
-    obConversion.SetInAndOutFormats(fileformat, "report")
+#    obConversion.SetInAndOutFormats(fileformat, "report")
+    obConversion.SetInFormat(fileformat)
+    obConversion.SetOutFormat("report")
 #    input_name="NaT2_2.txyz"
 #output_name="NaT2_2.rep"
     mol = openbabel.OBMol()
@@ -51,10 +53,8 @@ def btd_info(fileformat,input_name):
 #print mol.NumBonds()
 #print mol.NumResidues()
 #print len(outMDL)
-    obConversion.SetInAndOutFormats(fileformat, "molreport")
-    mol = openbabel.OBMol()
-    obConversion.ReadFile(mol, input_name)   # Open Babel will uncompress automatically
-#obConversion.WriteFile(mol,output_name)   # Open Babel will uncompress automatically
+###    obConversion.SetInAndOutFormats(fileformat, "molreport")
+    obConversion.SetOutFormat("molreport")
     outMDL = obConversion.WriteString(mol)
 #    print outMDL
     output = outMDL.split('\n')
@@ -70,6 +70,8 @@ def btd_info(fileformat,input_name):
             pair1.append(int(mylist[3]))
             pair2.append(int(mylist[5]))
 #    for ring in openbabel.OB_RINGTYPES_MOL(mol)        
+#    obConversion.SetOutFormat(obtype)
+#    outMDL = obConversion.WriteString(mol)
 ###   mol.Clear();
 # Can't clear yet
     return pair1,pair2,bangle1,bangle2,bangle3,tangle1,tangle2,tangle3,tangle4,mol
@@ -99,6 +101,26 @@ def openbabel_count_hetero_rings(mol):
             count += 1
     print test,[mol.GetAtom(atom_id)for atom_id in ring._path]   
     return count
+
+
+
+#obConversion = openbabel.OBConversion()
+#obConversion.SetInAndOutFormats("sdf", "sdf")
+
+#mol = openbabel.OBMol()
+"""
+while iteratorMol:
+
+    newData = openbabel.OBPairData()
+    newData.SetAttribute("NEWDATA")
+    newData.SetValue("blabla")
+    mol.SetData(newData)
+
+    print obConversion.WriteString(mol)
+
+    iteratorMol = obConversion.Read(mol) 
+"""
+#
 """
 #
 # test code

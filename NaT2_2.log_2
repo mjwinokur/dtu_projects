@@ -1,0 +1,42 @@
+
+     ######################################################################
+   ##########################################################################
+  ###                                                                      ###
+ ###            TINKER  ---  Software Tools for Molecular Design            ###
+ ##                                                                          ##
+ ##                        Version 7.1  February 2015                        ##
+ ##                                                                          ##
+ ##               Copyright (c)  Jay William Ponder  1990-2015               ##
+ ###                           All Rights Reserved                          ###
+  ###                                                                      ###
+   ##########################################################################
+     ######################################################################
+
+
+ The TINKER Analysis Facility can Provide :
+
+ General System and Force Field Information [G]
+ Force Field Parameters for Interactions [P]
+ Total Potential Energy and its Components [E]
+ Energy Breakdown over Each of the Atoms [A]
+ List of the Large Individual Interactions [L]
+ Details for All Individual Interactions [D]
+ Electrostatic Moments and Principle Axes [M]
+ Internal Virial, dE/dV Values & Pressure [V]
+ Connectivity Lists for Each of the Atoms [C]
+
+ Enter the Desired Analysis Types [G,P,E,A,L,D,M,V,C] :  
+ Total Potential Energy :                 69.8724 Kcal/mole
+
+ Intermolecular Energy :                 -85.5963 Kcal/mole
+
+ Energy Component Breakdown :           Kcal/mole      Interactions
+
+ Bond Stretching                          33.0723            106
+ Angle Bending                            33.4767            172
+ Stretch-Bend                             -0.1876            172
+ Angle-Angle                               0.7226            168
+ Out-of-Plane Bend                         0.0097            168
+ Torsional Angle                          34.1460            264
+ Van der Waals                           -36.8278          14024
+ Dipole-Dipole                             5.4604           3025

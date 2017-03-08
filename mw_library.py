@@ -42,7 +42,7 @@ def axisangle_to_q(v, theta):
 
 def q_to_axisangle(q):
     w, v = q[0], q[1:]
-    theta = arccos(w) * 2.0
+    theta = np.arccos(w) * 2.0
     return normalize(v), theta
     
 def qv_mult(q1, v1):
@@ -81,9 +81,9 @@ def read_txyz(name):
 #    global astring
 #    global header
 #    global uc
-    aax = []
-    aay = []
-    aaz = []
+#    aax = []
+#    aay = []
+#    aaz = []
     atype = []
     abt = []
     astring = []
@@ -91,52 +91,118 @@ def read_txyz(name):
     l2_num = -1
     ioff=1
     newstring=""
-
+#
     for line in text:
-        line=line.strip();  # get rid of \cr\lf at end of line
+        mystring=line.strip();  # get rid of \cr\lf at end of line
         l2_num += 1
-        mystring = line
         newline = ' '.join(mystring.split())
         mylist = newline.split(" ")
         alen = len(mylist)
+#        print l2_num,line
+#        print l2_num, alen, mylist
+        newstring = ""
         if (l2_num == 0):
-            header = line + '\n'  # Save the first line if needed
+            header = line  # Save the first line if needed
+            lmax = int(mylist[0])
+            aax = np.empty((lmax), dtype=object)
+            aay = np.empty((lmax), dtype=object)
+            aaz = np.empty((lmax), dtype=object)
         elif (l2_num == 1 and alen == 6):  # Unit cell information is available
             l2_num -= 1
             uc = [(float(mylist[j])) for j in range(6)]
+        elif (l2_num == lmax+1):
+            break
         elif (l2_num > 0):
-#    line=line.strip();  # get rid of \cr\lf at end of line
-#	mystring = line
-#	l2_num += 1
-#	print l2_num, mystring 
-#	if (l2_num == 1):
-#	    header = line + '\n'
-#	else:
-#	    newline = ' '.join(mystring.split())
-#	    string.append(newline)
-
-	    mylist = newline.split(" ")
-            alen = len(mylist)
+#            mylist = newline.split(" ")
+#            alen = len(mylist)
             newstring = "%4s" % (mylist[ioff+5])
-	    m = alen - 7
-#            print(m,alen, mylist )            
-	    for l in range(m):  #now to put in bonding configuration
-	        n = 7 + l
+            m = alen - 7
+            #print(m,alen, mylist )
+            for l in range(m):  
+                #now to put in bonding configuration
+                n = 7 + l
                 temp = int(mylist[n])
-#	        mynewstring = mynewstring+' '+str(a_site)
-                tstring = "%4s" % (temp) 
-	        newstring=newstring+tstring
+                #mynewstring = mynewstring+' '+str(a_site)
+                tstring = "%5s" % (temp) 
+                newstring=newstring+tstring
 #            print(newstring)
 #
-#	    print mylist 
-	    atype.append(mylist[ioff])
-	    aax.append(float(mylist[ioff+1]))
-	    aay.append(float(mylist[ioff+2]))
-	    aaz.append(float(mylist[ioff+3]))
-	    abt.append(int(mylist[ioff+4]))
-        astring.append(newstring)
-#	    i=l2_num-2
-#	    print aax[i],aay[i],aaz[i],astring[i]
+#	        print l2_num,mylist 
+            i=l2_num-1
+            atype.append(mylist[ioff])
+            aax[i]=float(mylist[ioff+1])
+            aay[i]=float(mylist[ioff+2])
+            aaz[i]=float(mylist[ioff+3])
+            abt.append(int(mylist[ioff+4]))
+            astring.append(newstring)
+#            print l2_num,mylist[ioff],float(mylist[ioff+1]),float(mylist[ioff+2]),float(mylist[ioff+3]),int(mylist[ioff+4]),newstring
+#            print i, aax[i],aay[i],aaz[i],astring[i]
     file.close() 
 #    l2_num=l2_num-1
-    return l2_num, aax,aay,aaz,atype,astring,abt,uc
+    return l2_num,aax,aay,aaz,atype,astring,abt,uc,header
+#
+#
+# open a txyz file, extract unit cell parameters, then save a 2nd file without them
+#
+def read_txyz_strip_uc(name_in,name_out):
+    print 'name: ',name_in
+    f = open(name_out,'w')
+    l2_num = -1
+    with open(name_in, "r") as file:
+        text = file.readlines()
+    uc = []
+    for line in text:
+#        print line
+        mystring = line.strip();  # get rid of \cr\lf at end of line
+        l2_num += 1
+        newline = ' '.join(mystring.split())
+        mylist = newline.split(" ")
+        alen = len(mylist)
+#        print mylist
+        if (l2_num == 0):
+            f.write(line)  # write out first line
+        elif (l2_num == 1 and alen == 6):  # Unit cell information is available
+            l2_num -= 1
+            for i in range(6):
+                uc.append(float(mylist[i]))
+        elif (l2_num > 0):
+            f.write(line)
+    file.close() 
+    f.close()
+#    l2_num=l2_num-1
+    return uc
+#
+#
+# From http://hoomd-blue.readthedocs.io/en/stable/box.html
+# boxMatrix contains an arbitrarily oriented right-handed box matrix.
+#
+def tilt_calc(a,b,c):
+    Lx = np.sqrt(np.dot(a, a))
+    a2x = np.dot(a, b) / Lx
+    Ly = np.sqrt(np.dot(b,b) - a2x*a2x)
+    xy = a2x / Ly
+    v0xv1 = np.cross(a, b)
+    v0xv1mag = np.sqrt(np.dot(v0xv1, v0xv1))
+    Lz = np.dot(c, v0xv1) / v0xv1mag
+    a3x = np.dot(a, c) / Lx
+    xz = a3x / Lz
+    yz = (np.dot(b,c) - a2x*a3x) / (Ly*Lz)
+    return xy,yz,xz
+
+def write_txyz(name,l2_num,atype,astring,aax,aay,aaz,abt,uc,header):
+# open file to get r_x, r_y and r_z coordinates
+# open a base file of the monomer 
+    print 'name: ',name
+    f = open(name,'w;')
+    mynewstring =  str(l2_num)+' '+header
+    f.write(mynewstring)
+    mynewstring =  "%12.6f%12.6f%12.6f%12.6f%12.6f%12.6f" % (uc[0],uc[1],uc[2],uc[3],uc[4],uc[5])
+    f.write(mynewstring+'\n')
+    for i in range(l2_num):
+        mynewstring="%4s%4s%10.4f%10.4f%10.4f%4s" % (str(i+1),atype[i],aax[i],aay[i],aaz[i],abt[i])
+        mynewstring=mynewstring+' '+astring[i]+'\n'
+#	print(j,mynewstring)
+#	raw_input()
+	f.write(mynewstring)
+    f.close() 
+    return

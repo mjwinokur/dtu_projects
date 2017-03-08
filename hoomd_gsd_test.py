@@ -5,7 +5,7 @@ Created on Wed Mar 1 11:27:47 2017
 
 @author: winokur
 """
-import os
+#import os
 #import openbabel, re  #used in obtest
 import numpy as np
 #import math
@@ -17,17 +17,24 @@ from gsd.hoomd import Snapshot
 z = Snapshot()
 import gsd.pygsd  # line below only gets hoomd and not pygsd 
 import gsd
-os.system('cd /user/winokur/hoomd_test/')
 from mw_library import read_txyz
+from mw_library import read_txyz_strip_uc 
+from mw_library import tilt_calc 
+from mw_library import write_txyz
 from obtest import btd_info
-from forcefield_decode_mm import mm3_decode
+from forcefield_decode_mm import mm3_decode 
 # Decode a tinker file
-mfile = '/home/winokur/hoomd_test/NaT2_2.txyz'
-l2_num, aax,aay,aaz,atype, astring, abt, uc = read_txyz(mfile)
-if (len(uc) != 0):
+mfile = 'NaT2_2.txyz'
+temp_file ='temp.txyz'
+uc = read_txyz_strip_uc(mfile,temp_file)
+if (len(uc)== 0):
+    raw_input('Stop, this tinker file requires unit cell information')
+l2_num, aax,aay,aaz,atype, astring, abt, uc2, header = read_txyz(temp_file)
+if (len(uc2) != 0):
     raw_input('Stop and remome txyz file unit cell line, openbabel interpreter breaks otherwise')
-# Require tinkey key file for unit cell information
-uc = [20.502, 5.989, 8.07, 90., 96.8549, 90.]
+#
+write_txyz('wtest.xyz',l2_num,atype,astring,aax,aay,aaz,abt,uc,header)
+#uc = [20.502, 5.989, 8.07, 90., 96.8549, 90.]
 # l2_num number of atoms in positions aax,aay,aaz
 # atype is the letter element
 # astring is the residual bonding information if needed
@@ -47,7 +54,7 @@ for i in atype:
     if i not in aatypes:
         aatypes.append(i)
 tid = [(ptypes.index(i)) for i in abt] # e.g. encode from 42(S) 2(C) 5(H) to 0 1 2
-pair1,pair2,bangle1,bangle2,bangle3,tangle1,tangle2,tangle3,tangle4,mol = btd_info("txyz",mfile)
+pair1,pair2,bangle1,bangle2,bangle3,tangle1,tangle2,tangle3,tangle4,mol = btd_info("txyz",temp_file)
 pair1 = [(pair1[i]-1) for i in range(len(pair1))]
 pair2 = [(pair2[i]-1) for i in range(len(pair2))]
 bangle1 = [(bangle1[i]-1) for i in range(len(bangle1))] # indexing needs to start at zero
@@ -57,8 +64,7 @@ tangle1 = [(tangle1[i]-1) for i in range(len(tangle1))]
 tangle2 = [(tangle2[i]-1) for i in range(len(tangle2))]
 tangle3 = [(tangle3[i]-1) for i in range(len(tangle3))]
 tangle4 = [(tangle4[i]-1) for i in range(len(tangle4))]
-print len(pair1),len(bangle1),len(tangle1)
-raw_input()
+#print len(pair1),len(bangle1),len(tangle1)
 # So we can have S-C or C-S but we use the same force field parameters
 bdtypes = []
 bdtypeid = []
@@ -88,13 +94,74 @@ for i in range(len(tangle1)):
         tortypes.append(temp)  # all of these are preliminary because the parameterization may have multiple terms
     tortypeid.append(tortypes.index(temp)) #   all of these are preliminary because the parameterization may have multiple terms 
 # Now extract the MM3 parameters with the potential bonding of the specific molecular structure here
-amass,bdtypes_tot,bond1,bond2,angtypes_tot,angk,angt0,tortypes_tot,tor1,tor2,tor3 = mm3_decode(fffile,ptypes,aatypes,bdtypes,angtypes,tortypes)
+amass,bdtypes_tot,bond1,bond2,angtypes_tot,angk,angt0,tortypes_tot,tor1,tor2,tor3,vdw1,vdw2,vdwpr1,vdwpr2 = mm3_decode(fffile,ptypes,aatypes,bdtypes,angtypes,tortypes)
 angt0 = map(np.deg2rad, angt0) # convert degrees to radians
+#
+# Now to deduce molecules
+# This assumes that openbabel produces a sequenced numbering of the pairs
+# So far, so good
+mol_ct=1
+mol_idx = []
+for i in range(l2_num):
+    mol_idx.append(-2)
+mol_idx[pair1[0]]=mol_ct
+mol_idx[pair2[0]]=mol_ct
+for i in range(1,len(pair1)):
+#    print i, mol_idx[i],pair1[i],pair2[i],mol_ct
+#    raw_input('A:\n\n')
+    if (mol_idx[pair1[i]] > -1):
+        mol_idx[pair2[i]]= mol_idx[pair1[i]]
+    elif (mol_idx[pair2[i]] > -1):
+        mol_idx[pair1[i]]= mol_idx[pair2[i]]
+    else:
+        mol_ct += 1
+        mol_idx[pair1[i]]=mol_ct
+        mol_idx[pair2[i]]=mol_ct
+# Generate list of the atoms for each molecule        
+mol_seq = [[]]
+for i in range(1,mol_ct):
+    mol_seq.append([])
+j = mol_idx[pair1[i]]-1
+for i in range(l2_num):
+    j = mol_idx[i]-1
+    mol_seq[j].append(i)
+#
+# To reconstruct calculate the pair distance if they are on 
+# the same molecule and, if needed, add lattice vector
+#    
 # Need to ident five and six membered rings
 #print bond1,bond2  # springs constant and equilbrium lengths
 #print len(bdtypes), bdtypes
 #
 # Now to take the subset of force constants and match them directly
+# Lennard-Jones is to be first Note that we can't use the exact hard core as given in hoomd
+# We also need to move between Angstroms and kcal/mol to nm and kJ/mol
+# Moreover Allinger's MM3 appears to be in terms of r_min and not sigma using the exp-6 Buckingham form 
+# sigma = r_min*0.8909 or 1/2**(1./6.)
+lj_pair_1 =[]
+lj_pair_2 =[]
+epsilon = []
+sigma = []
+dist = 3.0
+#k = 0
+sig_scale=np.power(2.,-1./6.)  # convert r_min to sigma
+for i in range(len(vdw1)):
+    for j in range(len(vdw1)):
+        lj_pair_1.append("%s" % ptypes[i])
+        lj_pair_2.append("%s" % ptypes[j])
+#        lj_pair_1.append(aatypes[i])
+#        lj_pair_2.append(aatypes[j])
+        epsilon_tmp = np.sqrt(vdw2[i]*vdw2[j])   # In kcal/mol 
+        sigma_tmp = vdw1[i]+vdw1[j] # in Angstroms
+        dist = sigma_tmp
+#        E_vdw=epsilon_tmp*(184000.*np.exp(-12.0*dist/sigma_tmp)-2.25*np.power((sigma_tmp/dist),6))
+        sigma.append(sig_scale*sigma_tmp)
+        epsilon.append(1.1194*epsilon_tmp)   # 1.99*2.25/4.0  
+#        E_vdw2=4.*epsilon[k]*(np.power(sigma[k]/dist,12)-np.power((sigma[k]/dist),6))
+#        k += 1
+#        print aatypes[i],aatypes[j],sigma_tmp,dist, epsilon_tmp,E_vdw,E_vdw2
+# Note that these units are for Angstroms and kcal/mol NOT nanometers and kJ/mol
+#
 atm5ring =[]
 for ring in mol.GetSSSR():
     if ((int(ring.Size()) == 5) and ring.IsAromatic() ):
@@ -174,13 +241,122 @@ for i in range(len(tangle1)): # This not efficient
                 tortypeid_final.append(j)
     if ((i+1) != len(tortypeid_final)): 
         print 'Something is amiss',i,(i+1),len(tortypeid_final)
-#        print ring.Size(), ring.IsAromatic(), ring.GetType(), 
-#        if ring.IsAromatic():
-#            count += 1
-
-
-# At the moment there are only three bond types  42 2, 2 2, 2 5
-# For the pair list we neet
+#
+# Now to establish place atoms within a box and then reconstruct individual molecules for display
+#
+# Given the unit cell, a, b, c, 90, beta, 90 construct coordinates
+# This needs to be modified if triclinic
+# Convention for monoclinic construction has a-vector parallel to x-axis, 
+# and b-vector parallel to the y-axis  
+# But for thin films b and c are in the basal plane and thus in the "y-z" plane
+# One needs to be consistent and rotate the atoms accordinging
+# Here we will use the crystallographic convention to test NaT2 molecule head
+# to head against Tinker
+# Building on a substrate will be tricky if still monoclinic
+#
+# A better way is to assume continuity at the onset and track the wrap count.
+#
+a =[uc[0],0.,0.]
+b =[0.,uc[1],0.]
+c =[(uc[2]*np.cos(np.radians(uc[4]))),0.,(uc[2]*np.sin(np.radians(uc[4])))]
+xy,yz,xz = tilt_calc(a,b,c)
+xy=0.
+yz=0.
+xz=0.
+Lx=0.5*uc[0]
+Ly=0.5*uc[1]
+Lz=0.5*uc[2]
+Lx=25.
+Ly=25.
+Lz=25.
+wrapx=np.zeros(l2_num)
+wrapy=np.zeros(l2_num)
+wrapz=np.zeros(l2_num)
+axwrap=aax
+aywrap=aay
+azwrap=aaz
+wrap_ct=0
+for i in range(l2_num):
+    xmin=-Lx+(xz-xy*yz)*aaz[i]+xy*aay[i]
+    xmax= Lx+(xz-xy*yz)*aaz[i]+xy*aay[i]
+    ymin=-Ly+yz*aaz[i]
+    ymax= Ly+yz*aaz[i]
+    zmin=-Lz
+    zmax=+Lz
+ #   print i, aax[i],aay[i],aaz[i]
+ #   print xmin,xmax,ymin,ymax,zmin,zmax
+ #   raw_input()
+    while (axwrap[i] < xmin):
+        axwrap[i]=axwrap[i]+a[0]
+        wrapx[i] +=  1.0
+        wrap_ct +=1
+        if (axwrap[i] >= xmin):
+            break
+    while (axwrap[i] > xmax):
+        axwrap[i]=axwrap[i]-a[0]
+        wrapx[i] += -1.0
+        wrap_ct +=1
+        if (axwrap[i] <= xmax):
+            break
+    while (aywrap[i] < ymin):
+        aywrap[i]=aywrap[i]+b[1]
+        wrapy[i] +=  1.0
+        wrap_ct +=1
+        if (aay[i] >= ymin):
+            break
+    while (aywrap[i] > ymax):
+        aywrap[i]=aay[i]-b[1]
+        wrapy[i] += -1.0
+        wrap_ct +=1
+        if (aywrap[i] <= ymax):
+            break
+    while (azwrap[i] < zmin):
+        axwrap[i]=axwrap[i]+c[0]
+        azwrap[i]=azwrap[i]+c[2]
+        wrapz[i] +=  1.0
+        wrap_ct +=1
+        if (aax[i] >= zmin):
+            break
+    while (azwrap[i] > zmax):
+        axwrap[i]=axwrap[i]-c[0]
+        azwrap[i]=azwrap[i]-c[2]
+        wrapz[i] += -1.0
+        wrap_ct +=1
+        if (aaz[i] <= zmax):
+            break
+#    if (wrap_ct==2):
+#        write_txyz('wtest.xyz_2',l2_num,atype,astring,axwrap,aywrap,azwrap,abt,uc,header)
+#    print i, axwrap[i],aywrap[i],azwrap[i],wrap_ct
+#    raw_input()
+#    
+write_txyz('wtest.xyz_2',l2_num,atype,astring,axwrap,aywrap,azwrap,abt,uc,header)
+#
+xunwrap=aax
+yunwrap=aay
+zunwrap=aaz
+for i in range(l2_num):
+    xunwrap[i] = axwrap[i] - wrapx[i] * a[0]
+    yunwrap[i] = aywrap[i] - wrapx[i] * a[1]
+    zunwrap[i] = azwrap[i] - wrapx[i] * a[2]
+    xunwrap[i] = axwrap[i] - wrapy[i] * b[0]
+    yunwrap[i] = aywrap[i] - wrapy[i] * b[1]
+    zunwrap[i] = azwrap[i] - wrapy[i] * b[2]
+    xunwrap[i] = axwrap[i] - wrapz[i] * c[0]
+    yunwrap[i] = aywrap[i] - wrapz[i] * c[1]
+    zunwrap[i] = azwrap[i] - wrapz[i] * c[2]
+write_txyz('wtest.xyz_3',l2_num,atype,astring,xunwrap,yunwrap,zunwrap,abt,uc,header)
+#
+# Unwrapped atoms are now contiguous    
+#
+# Now to write and simple xyz file
+ 
+#    print i, aax[i],aay[i],aaz[i]
+#    raw_input()
+# Now to check and write out txyz file
+# Then to reconstruct continuity of the molecules
+# generate molecules earlier and then use pairs and distances to reconstruct
+# Finally test hoomd against Tinker
+# Make forward progress...finally
 
 #s.configuration.step = 1
 #s.particles.N=l2_num
@@ -194,7 +370,7 @@ for i in range(len(tangle1)): # This not efficient
 #
 s = gsd.hoomd.Snapshot()
 s.configuration.step = 1
-s.configuration.box=[50, 50, 50, 0, 0, 0]  # lxly lz xy xz yz tilts 
+s.configuration.box=[2.*Lx,2.*Ly,2.*Lz, xy, xz, yz]  # lxly lz xy xz yz tilts 
 # All particles must be inside the box, need to deal with molecules that span box walls
 # Parameter image there for stores the wrapping information
 # from this and any initial wrapping deltas one can reconstruct a contiguous molecule
@@ -265,15 +441,17 @@ print snap.dihedrals.typeid
 hoomd.context.initialize("")
 #hoomd.init.create_lattice(unitcell=hoomd.lattice.sc(a=2.0, type_name='A'), n=10)
 # 
-hoomd.data.boxdim(4.*uc[0],4.*uc[1],4.*uc[2],0.0,0.0,0.0,3)
+hoomd.data.boxdim(2.*Lx,2.*Ly,2.*Lz, xy, xz, yz,3)
 hoomd.init.read_gsd("/home/winokur/hoomd_test/test.gsd", restart=None, frame=0, time_step=None)
 #hoomd.init.read_gsd(filename, restart=None, frame=0, time_step=None)
 # All particles must be inside the box, need to deal with molecules that span box walls
 # The parameter "image" is there for storing the wrapping information
 # from this and any initial wrapping deltas one can reconstruct a contiguous molecule
-# This needs to be done
 # http://gsd.readthedocs.io/en/latest/schema-hoomd.html#chunk-configuration/box has
 # mathematical transformations explicitly listed'
+pair_coeff = hoomd.md.pair.coeff()
+for i in range(len(epsilon)):
+    pair_coeff.set(lj_pair_1[i],lj_pair_2[i],epsilon=epsilon[i], sigma=sigma[i])
 # Set the bond angle force coefficients
 angle_coeff = hoomd.md.angle.coeff()
 for i in range(len(angtypes_tot)):
