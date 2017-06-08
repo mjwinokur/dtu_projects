@@ -33,7 +33,7 @@ l2_num, aax,aay,aaz,atype, astring, abt, uc2, header = read_txyz(temp_file)
 if (len(uc2) != 0):
     raw_input('Stop and remome txyz file unit cell line, openbabel interpreter breaks otherwise')
 #
-write_txyz('wtest.xyz',l2_num,atype,astring,aax,aay,aaz,abt,uc,header)
+#write_txyz('wtest.xyz',l2_num,atype,astring,aax,aay,aaz,abt,uc,header)
 #uc = [20.502, 5.989, 8.07, 90., 96.8549, 90.]
 # l2_num number of atoms in positions aax,aay,aaz
 # atype is the letter element
@@ -54,6 +54,7 @@ for i in atype:
     if i not in aatypes:
         aatypes.append(i)
 tid = [(ptypes.index(i)) for i in abt] # e.g. encode from 42(S) 2(C) 5(H) to 0 1 2
+
 pair1,pair2,bangle1,bangle2,bangle3,tangle1,tangle2,tangle3,tangle4,mol = btd_info("txyz",temp_file)
 pair1 = [(pair1[i]-1) for i in range(len(pair1))]
 pair2 = [(pair2[i]-1) for i in range(len(pair2))]
@@ -380,18 +381,18 @@ s.configuration.box=[2.*Lx,2.*Ly,2.*Lz, xy, xz, yz]  # lxly lz xy xz yz tilts
 # mathematical transformations explicitly listed
 ##############################################################################
 s.particles.N = l2_num
-s.bonds.N = len(bdtypeid_final)
-s.bonds.types = bdtypes_tot
-s.bonds.typeid = bdtypeid_final
-s.angles.N = len(angtypeid_final)
-s.angles.types = angtypes_tot
-s.angles.typeid = angtypeid_final
-s.dihedrals.N = len(tortypeid)
-s.dihedrals.types = tortypes_tot
-s.dihedrals.typeid = tortypeid_final
-s.bonds.group = [(pair1[i],pair2[i]) for i in range(s.bonds.N)]
-s.angles.group = [(bangle1[i],bangle2[i],bangle3[i]) for i in range(s.angles.N)]
-s.dihedrals.group = [(tangle1[i],tangle2[i],tangle3[i],tangle4[i]) for i in range(s.dihedrals.N)]
+#s.bonds.N = len(bdtypeid_final)
+#s.bonds.types = bdtypes_tot
+#s.bonds.typeid = bdtypeid_final
+#s.angles.N = len(angtypeid_final)
+#s.angles.types = angtypes_tot
+#s.angles.typeid = angtypeid_final
+#s.dihedrals.N = len(tortypeid)
+#s.dihedrals.types = tortypes_tot
+#s.dihedrals.typeid = tortypeid_final
+#s.bonds.group = [(pair1[i],pair2[i]) for i in range(s.bonds.N)]
+#s.angles.group = [(bangle1[i],bangle2[i],bangle3[i]) for i in range(s.angles.N)]
+#s.dihedrals.group = [(tangle1[i],tangle2[i],tangle3[i],tangle4[i]) for i in range(s.dihedrals.N)]
 #
 s.particles.position = [(aax[i],aay[i],aaz[i]) for i in range(l2_num)]
 s.particles.typeid = [tid[i] for i in range(l2_num)]
@@ -416,10 +417,10 @@ t = gsd.hoomd.open(name='test.gsd', mode='wb')
 t.extend( (create_frame(i) for i in range(10)) )
 t.append( create_frame(11) )
 """
+"""
 # Read the file out to double check
 t = gsd.hoomd.open(name='/home/winokur/hoomd_test/test.gsd', mode='rb')
 snap=t[0]
-"""
 print len(t)
 print snap.particles.N
 print snap.particles.typeid
@@ -438,7 +439,7 @@ print snap.dihedrals.types
 print snap.dihedrals.typeid
 """
 # Test hooomd.md
-hoomd.context.initialize("")
+hoomd.context.initialize()
 #hoomd.init.create_lattice(unitcell=hoomd.lattice.sc(a=2.0, type_name='A'), n=10)
 # 
 hoomd.data.boxdim(2.*Lx,2.*Ly,2.*Lz, xy, xz, yz,3)
@@ -449,21 +450,44 @@ hoomd.init.read_gsd("/home/winokur/hoomd_test/test.gsd", restart=None, frame=0, 
 # from this and any initial wrapping deltas one can reconstruct a contiguous molecule
 # http://gsd.readthedocs.io/en/latest/schema-hoomd.html#chunk-configuration/box has
 # mathematical transformations explicitly listed'
-pair_coeff = hoomd.md.pair.coeff()
+pair_coeff = md.pair.coeff()
 for i in range(len(epsilon)):
     pair_coeff.set(lj_pair_1[i],lj_pair_2[i],epsilon=epsilon[i], sigma=sigma[i])
 # Set the bond angle force coefficients
-angle_coeff = hoomd.md.angle.coeff()
+angle_coeff = md.angle.coeff()
 for i in range(len(angtypes_tot)):
     angle_coeff.set(angtypes_tot[i],k=angk[i],t0=angt0[i])
 #
-dihed_coeff = hoomd.md.angle.coeff()
+dihed_coeff = md.angle.coeff()
 for i in range(len(angtypes_tot)):
     dihed_coeff.set(tortypes_tot[i],k1=tor1[i],k2=tor2[i],k3=tor3[i],k4=0.0)
 #    
-bond_coeff = hoomd.md.bond.coeff()
+bond_coeff = md.bond.coeff()
 for i in range(len(bdtypes_tot)):
     bond_coeff.set(bdtypes_tot[i],k=bond1[i], r0=bond2[i])
 
+nl=md.nlist.cell()
+mypair = hoomd.md.pair
+myljforce = mypair.lj
 
+lj= mypair.lj(r_cut=3.0,nlist=nl)
+for i in range(len(epsilon)):
+    lj.pair_coeff.set(lj_pair_1[i],lj_pair_2[i],epsilon=epsilon[i], sigma=sigma[i])
+gall = hoomd.group.all()
+system = hoomd.data.system_data
+
+md.integrate.mode_standard(dt=0.0)
+
+md.integrate.nve(group=gall)
+hoomd.run(1)
+
+info = hoomd.context.SimulationContext()
+print info.on_gpu()
+print info.forces
+
+hoomd.context.options.user = 'winokur'
+hoomd.context.options.user
+
+system = hoomd.data.system_data
+snapshot = system.take_snapshot
 
