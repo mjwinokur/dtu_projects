@@ -5,7 +5,7 @@ Created on Mon Apr  3 10:35:01 2017
 
 @author: winokur
 """
-
+from __future__ import print_function
 import matplotlib
 import numpy as np
 import math
@@ -65,8 +65,9 @@ store = "false"
 sigmax0=0.006; sigmay0=0.009; sigma_arc=0.015 # in radians
 alpha=0.; beta=0.; gamma = 0.0
 xsplit = 0.00  # was 0.02
-fringing = 'true'
+fringing = 'false'
 con_width=0.00  # Lorentian 0.05
+scale2D = 'sqrt'
 #con_width=0.02
 # plot resolution
 delta = 0.0125; 
@@ -77,9 +78,9 @@ scaling = 'linear'
 lldata = 'none'
 hc = []; kc =[]; lc=[]
 if (text != ""):
-    print "with special:",text
+    print("with special:",text)
     alist = text.split()
-    print alist
+    print(alist)
     j=0
     for i in alist:
 #        print j,i
@@ -106,31 +107,32 @@ if (text != ""):
             sigmax0 = float(alist[j+1])
         elif (i == 'splitx'):
             xsplit = float(alist[j+1])
-            print 'splitx',xsplit
+            print('splitx',xsplit)
         elif (i == 'sigmay'):
             sigmay0 = float(alist[j+1])
         elif (i == 'lsigmay'):
             con_width = float(alist[j+1])
+            fringing = 'true'
         elif (alist[j] == 'alpha'): # An arbitrary space
             alpha = float(alist[j+1])
-            print 'alpha: ',alpha
+            print('alpha: '),alpha
         elif (alist[j] == 'beta'): # An arbitrary space
             beta = float(alist[j+1])
-            print 'beta: ',beta
+            print('beta: '),beta
         elif (alist[j] == 'gamma'): # An arbitrary space
             gamma = float(alist[j+1])
-            print 'gamma: ',gamma
+            print('gamma: '),gamma
         elif (alist[j] == 'resol'): # An arbitrary space
             delta = float(alist[j+1])
-            print 'delta resolution: ',delta
+            print('delta resolution: '),delta
         elif (alist[j] == 'data'): # An arbitrary space
             lldata = alist[j+1]
-            print 'Expt. data file: ',lldata
+            print('Expt. data file: '),lldata
         j += 1
 
     if (len(hc) != len(kc) or len(hc) != len(lc) or len(kc) != len(lc)):
-        print hc, lc, kc
-        print 'hc kc lc must contain an identical number of elements'
+        print(hc, lc, kc)
+        print('hc kc lc must contain an identical number of elements')
         raw_input()
 rc('text', usetex=True)
 matplotlib.rcParams['xtick.direction'] = 'out'
@@ -199,13 +201,21 @@ xmax=2.; xmin=0.0 # limits over which the calculation must be done
 ymax=2.; ymin=0.0 #
 #
 label_x = []; label_y = []; label_ind = [];ind_tex = []
-j = 30
+j = 80 #30 or more
 ind = np.argsort(I)[-j:]  # Perform an indirect sort of Miller intensities (f^2*multiplicity) and
-# keep only the 30 top intensities for outputing
+# keep only the j top intensities for outputing
 label_xoff = (xmax-xmin)/32.
 label_yoff = (ymax-ymin)/100.
 # The assumption is that we have 3x3 supercell in the b and c directions of the crystal
 # This list will be overlaid on the 2D plots but is recorded in the file given by indfile
+scell_h = 9; scell_k = 3; scell_l = 3
+s_h=float(scell_h);s_k=float(scell_k);s_l=float(scell_l);
+Imaxdiv500 = max(I)/50000.  #500 or 50000 # for convoluting with an arc 
+use_int_only='T'
+#use_int_only='F'
+use_gap_flag ='T'  # Special for gapped structure to get approximate integer
+#use_gap_flag ='F'
+idx_tmp=[]
 for i in ind:
     [hh,kk,ll]=hkl[i]
     Ghkl = hh*astar+kk*bstar+ll*cstar
@@ -213,34 +223,47 @@ for i in ind:
     Gperp = abs(np.dot(Ghkl,astarhat))
     Gmag2 = np.dot(Ghkl,Ghkl)
     Gpara= np.sqrt(abs(Gmag2-Gperp*Gperp))  # can be just less than zero
-    ih,ih2 = divmod(hh,8);ik,ik2 = divmod(kk,3); il,il2 = divmod(ll,3);
+    ih,ih2 = divmod(hh,s_h);ik,ik2 = divmod(kk,s_k); il,il2 = divmod(ll,s_l);
     ih = int(ih);ik = int(ik); il = int(il);
+# Special for gapped structure
+    if (use_gap_flag):
+        ih2=0.;ik2=0.;il2=0.;
+    tmp=[ih,ik,il]
+    use_flag = 'T'
+# only use integer indicies    
+    if ((ih2 > 0.0 or ik2 > 0.0 or il2 > 0.0) and use_int_only == 'T'):
+        use_flag = 'F'
 #    ih = int(hh);ik = int(kk); il = int(ll);
-    if (Gperp < ymax and Gpara < xmax):
+    if (ih == 0 and ik == 0 and il==0):
+        use_flag = 'F'
+#    print('Test',tmp in idx_tmp)
+#    FindDuplicates(idx_tmp)
+    if ((Gperp < ymax and Gpara < xmax) and (use_flag == 'T') and (tmp not in idx_tmp)) :
 #        print '%4s%3s%3s%3s%1s%8.2f%1s%6.3f%6.3f' % (i+2,ih,ik,il,' ',I[i],' ',Gpara,Gperp)
         # x and y are transposed on plotting
 ##        Gpara += label_xoff
 ##       Gperp -= label_yoff
 #            print 'here'
+        idx_tmp.append(tmp)    
         label_x.append(Gpara)
         label_y.append(Gperp)
         ith = ''
         if (ih2 != 0.):
-            ith = '.'+str(int(10.*ih2/3.)) 
+            ith = '.'+str(int(10.*ih2/s_h)) 
         if (ih < 0):
             hlabel='\overline{'+str(-ih)+ith+'}'
         else:
             hlabel= str(ih)+ith
         itk = ''
         if (ik2 != 0.):
-            itk = '.'+str(int(10.*ik2/3.)) 
+            itk = '.'+str(int(10.*ik2/s_k)) 
         if (ik < 0):
             klabel='\overline{'+str(-ik)+itk+'}'
         else:
             klabel= str(ik)+itk
         itl = ''
         if (il2 != 0.):
-            itl = '.'+str(int(10.*il2/3.)) 
+            itl = '.'+str(int(10.*il2/s_l)) 
         if (il < 0):
             llabel='\overline{'+str(-il)+itl+'}'
         else:
@@ -249,19 +272,27 @@ for i in ind:
         if (ith == '' and itk == '' and itl == ''):
             ind_tex.append( '%3s%3s%3s%1s%8.2f%1s%6.3f%6.3f' % (ih,ik,il,' ',I[i],' ',Gpara,Gperp))
         else:
-            temp ='%3s%3s%3s%1s%8.2f%1s%6.3f%6.3f' % (ih,ik,il,' ',I[i],' ',Gpara,Gperp)
-            temp = temp+' *** '+str(ih)+ith+' '+str(ik)+itk+' '+str(il)+itl
+            ihh=ih;ikk=ik;ill=il;
+            if (ih2 > 5.):
+                ihh=ih+1
+            if (ik2 > 5.):
+                ikk=ik+1
+            if (il2 > 5.):
+                ill=il+1
+            temp ='%3s%3s%3s%1s%8.2f%1s%6.3f%6.3f' % (ihh,ikk,ill,' ',I[i],' ',Gpara,Gperp)
+#            temp = temp+' >>> '+str(ih)+ith+' '+str(ik)+itk+' '+str(il)+itl
+            temp = temp+' >>> '+("%6.3f" % (hh/s_h))+' '+("%6.3f" % (kk/s_k))+' '+("%6.3f" % (ll/s_l))
+             
             ind_tex.append(temp)
-print 'Writing: ',indfile,' which has indexing information of ', j,' most intense Bragg peaks'
+print('Writing: ',indfile,' which has indexing information of ', j,' most intense Bragg peaks')
+#you can loop through all the lists and count as :
 f = open(indfile,'w')
 for i in ind_tex:
     f.write(i+' \n')
 f.close()  # close write file
-
 #Narc_pts = int(6.*max([sigmax0,sigmay0,sigma_arc])/0.014)
 Narc_pts = int(6.*max([sigmax0,sigmay0,sigma_arc])/delta)
 #Narc_pts = 6 # Total number is 2*Narc_pts-1
-Imaxdiv500 = max(I)/500.
 sigmax=[];sigmay=[];
 if (Narc_pts > 1):
     Iarc_ang = np.linspace(-3.*sigma_arc,3.*sigma_arc,num=(Narc_pts*2-1))
@@ -287,7 +318,7 @@ for i in range(l_num):
 #    print i, hkl[i],Gpara,Gperp
 #    if (20*int(i/20) == i):
 #     raw_input()
-    if (Narc_pts == 1 or I[i] < Imaxdiv500):
+    if (Narc_pts < 2 or (Narc_pts > 1 and I[i] < Imaxdiv500)):
         if (Gpara < Gparmax and Gperp < Gpermax):
             sigmax.append(sigmax0*scalex)
             sigmay.append(sigmay0*scaley)
@@ -421,7 +452,7 @@ for k in range (len(Gpar)):
 #                raw_input()
                 Z[Nxs,Nys] = Z[Nxs,Nys]+Zsub[j,i]*I_k[k]
     if (500*int(k/500) == k): 
-        print 'At reflection',k,'/',len(Gpar)
+        print('At reflection',k,'/',len(Gpar))
 #Z2 = mlab.bivariate_normal(X, Y, 1.5, 0.5, 1, 1)
 # define grid.
 xi = np.linspace(xmin,xmax,Nx,endpoint=False )
@@ -430,14 +461,23 @@ XI, YI = np.meshgrid(xi, yi)
 
 ZI=np.transpose(Z)
 # Convoluction with a Lorentzian
-if (fringing == 'true'):
+if (fringing == 'true' and con_width > 0.0):
     for i in range(Nx):
         scan0 = ZI[:,i]
         scan0 = convolve_L(scan0,con_width,1.)
         ZI[:,i] =scan0 
 h, w = ZI.shape
 #
-ZJ=np.sqrt(ZI)
+#ZJ=np.power((1.+ZI),0.25)-1.
+if (scale2D == 'sqrt'):
+    ZJ=np.sqrt(ZI)
+elif (scale2D == 'linear'):
+    ZJ=ZI
+elif (scale2D == 'log'):
+    ZJ=np.log(ZI+1.)
+elif (scale2D == 'quartic'):
+    ZJ=np.power(ZI+1.,0.25)-1.
+#ZJ=np.log(1.+ZI)
 #
 #    zi = griddata((XS, YS), Z, (xi[None,:], yi[:,None]), method='cubic')
 # Create a simple contour plot with labels using default colors.  The
@@ -453,7 +493,7 @@ plt.title('Simplest default with labels')
 """
 # Or you can use a colormap to specify the colors; the default
 # colormap will be used for the contour lines
-plt.figure(1,figsize=(8,8)) # default seem to be centimeters
+plt.figure(1,figsize=(8.5,8.5)) # default seem to be centimeters
 # [None, 'none', 'nearest', 'bilinear', 'bicubic', 'spline16',
 #           'spline36', 'hanning', 'hamming', 'hermite', 'kaiser', 'quadric',
 #           'catrom', 'gaussian', 'bessel', 'mitchell', 'sinc', 'lanczos']
@@ -479,10 +519,19 @@ interp='spline36'
 #im = [plt.subplot(gs[0]),plt.subplot(gs[1])]
 #ax[0].imshow(data, cmap='gray', extent = bounds, origin='lower')
 #ax[1].plot(X[h/2,:],data[h/2,:],'.',X[h/2,:],data[h/2,:])
-
+z_min=50.
 im = plt.imshow(ZJ, interpolation=interp, origin='lower',
-                cmap=my_color, extent=(xmin,xmax, ymin,ymax))
-levels = np.arange(100.,1700., 400.)
+                cmap=my_color, extent=(xmin,xmax, ymin,ymax), vmin=z_min)
+
+plt.xticks(fontsize=16)
+plt.yticks(fontsize=16)
+ax = plt.gca()
+ax.set_xticks(np.arange(0, 2.4, 0.4));
+ax.set_yticks(np.arange(0, 2.4, 0.4));
+
+levels = np.arange(300.,1700., 400.)
+custom_legend='''NaT3 ($\sqrt I$) '''
+custom_legend=' '
 #                 colors=('r', 'green', 'blue', (1, 1, 0), '#afeeee', '0.5')
 CS = plt.contour(ZJ, levels,colors=('#afcccc', (1, 1, 0), '#afeeee', '0.5'),
                  origin='lower',
@@ -490,32 +539,43 @@ CS = plt.contour(ZJ, levels,colors=('#afcccc', (1, 1, 0), '#afeeee', '0.5'),
                  extent=(xmin,xmax,ymin,ymax))
 # Thicken the zero contour (at 100.)
 zc = CS.collections[0]  # Choose the particular contour for special sizing
+
 plt.setp(zc, linewidth=0.5)
 
 plt.clabel(CS, levels[1::3],  # label every third level
            inline=1,
            fmt='%1.0f',
            fontsize=5)
-# make a colorbar for the contour lines
-CB = plt.colorbar(CS, shrink=1.0, extend='both')
-plt.title(r'NaT2 or NaT3 test calculation ($\sqrt I$~)')
+if (custom_legend != ''):
+    plt.title(custom_legend)
+else:
+    plt.title(r'NaT2 or NaT3 test calculation ($\sqrt I$~)')
 #plt.hot()  # Now change the colormap for the contour lines and colorbar
-plt.xlabel(r'k$_{xy}$ ($\mbox{\AA}^{-1}$) ')
-plt.ylabel(r'k$_z$ ($\mbox{\AA}^{-1}$) ')
+plt.xlabel(r'$q_{\rm xy}$ ($\mbox{\AA}^{-1}$) ',fontsize=20)
+plt.ylabel(r'$q_{\rm z}$ ($\mbox{\AA}^{-1}$) ',fontsize=20)
 plt.flag()
 # We can still add a colorbar for the image, too.
-CBI = plt.colorbar(im, orientation='vertical', shrink=0.7)
+# NaT3 samples customization
+CBI_ticks =[50,500,1000,1500,2000,2500,3000]
+CBI = plt.colorbar(im, orientation='vertical', shrink=0.7,ticks=CBI_ticks )
+#CBI.set_label(' ',fontsize=14)
+CBI.set_ticklabels([r'\large $50$',r'\large $500$',r'\large $1000$',r'\large $1500$',r'\large $2000$',r'\large $2500$',r'\large $3000$'])
 # This makes the original colorbar look a bit out of place,
 # so let's improve its position.
-l, b, w, h = plt.gca().get_position().bounds
-ll, bb, ww, hh = CB.ax.get_position().bounds
-CB.ax.set_position([ll, b + 0.2*h, 1.2*ww, h*0.3])
+# make a colorbar for the contour lines
+cblines = 'F'
+if (cblines == 'T'):
+    CB = plt.colorbar(CS, shrink=1.0, extend='both')
+    l, b, w, h = plt.gca().get_position().bounds
+    ll, bb, ww, hh = CB.ax.get_position().bounds
+    CB.ax.set_position([ll, b + 0.2*h, 1.2*ww, h*0.3])  # Position Color bar for the contour lines
 #for i in range(len(label_ind)):
 #    plt.text(label_x[i],label_y[i], label_ind[i])
 texts = []
 for x, y, text in zip(label_x, label_y, label_ind):
-    texts.append(plt.text(x, y, text))
-adjust_text(texts, precision=0,force_text=0.01, size=7,autoalign='y',only_move={'points':'x', 'text':'x'},color='r')
+    texts.append(plt.text(x, y, text, color='y',fontsize=16))
+adjust_text(texts, precision=0,force_text=0.01, size=7,autoalign='y',only_move={'points':'x', 'text':'x'},color='yellow')
+plt.tight_layout()
 #adjust_text(texts, force_text=0.05, arrowprops=dict(arrowstyle="-|>",
 #                                                    color='r', alpha=0.5))
 #adjust_text(texts,prefer_move='y', precision=0, arrowprops=dict(arrowstyle="->", color='r', lw=0.5))
@@ -563,7 +623,7 @@ for j in range (k):
     for i in range (len(XI[j])):
         scan0.append(ZI[i,l0[j]:l1[j]].sum())
     scanll.append(scan0) # scanll should be size k by number of q_z data points
-scanll=np.array(scanll)
+scanll=np.array(scanll)*0.0001
 ### now to convolve with a Lorentian, needs updating
 #    if (fringing == 'true'):
 #        scan0 = convolve_L(scan0,con_width)
@@ -634,19 +694,29 @@ linest= ['solid','-.','--']
 #    1st  data set is the (h 1 1) and that it contains the maximum intensity
 #    2nd calc set is the (h 1 1) and that it contains the maximum intensity
 plt.figure(2,figsize=(8.5,8.5)) # default seem to be centimeters
-for j in range(3):
+for j in range(2):
     i = reorder[j]
 # Now for plotting the experimental data
     if (lldata != 'none' and scaling == 'linear'):
         plt.plot(xxd,yyd[:,j]*ymult[j]+y_off[j],linewidth=1.0)
     elif (lldata != 'none' and scaling == 'sqrt'):
         plt.plot(xxd,np.sqrt(yyd[:,j])*ymult[j]+y_off[j],linewidth=1.0)
+    print(j,' ymult: ',ymult[j])
 # Now for plotting the calc data
+#    xresc = 1.05
+    xresc = 1.00
     if (scaling == 'linear'):
-        plt.plot(xxc,scanll[i,:]+y_off[j],label=label[j],linestyle=linest[j],linewidth=1.0,color='black')
+        plt.plot(xxc*xresc,scanll[i,:]+y_off[j],label=label[j],linestyle=linest[j],linewidth=1.0,color='black')
     elif (scaling == 'sqrt'):
-        plt.plot(xxc,np.sqrt(scanll[i,:])+y_off[j],label=label[j],linestyle=linest[j],linewidth=1.0,color='black')
-plt.legend(loc='upper right',fontsize=12)  # do this after the labels and plots
-plt.xlabel(r'a* ($\rm{\AA}^{-1}$)',fontsize=14)
-plt.ylabel('Intensity (arb. units)',fontsize=14)
+        plt.plot(xxc*xresc,np.sqrt(scanll[i,:])+y_off[j],label=label[j],linestyle=linest[j],linewidth=1.0,color='black')
+ax = plt.gca()
+ax.set_xticks(np.arange(0, 2.4, 0.4));
+#ax.set_yticks(np.arange(0, 2.4, 0.4));    
+plt.tick_params(axis='both',labelsize=18)
+plt.legend(loc='upper right',fontsize=18)  # do this after the labels and plots
+plt.xlabel(r'$q_{\rm z}$ ($\rm{\AA}^{-1}$)',fontsize=18)
+plt.ylabel(r'$\rm{Intensity (arb. units)}$',fontsize=18)
+xxmin=0.;xxmax=2.;yymin=0.;yymax=2900.
+#plt.axis([xxmin,xxmax,yymin,yymax])
+plt.tight_layout()
 plt.show()

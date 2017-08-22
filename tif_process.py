@@ -18,6 +18,9 @@ i_file =""
 xs=1.0
 mask0 = []; mask1 =[]
 maska0 = []; maska1 =[]
+NaT3_corr_1 = 'false'
+NaT3_corr_2 = 'false'
+NaT3_corr_3 = 'false'
 # Typical use
 #python tif_process.py -i /home/winokur/Downloads/nat2_corrected.tiff -o NaT2_minus_bkg.tiff -t "mask 550,672,810,985 610,742,890,1015 integrate 556,701,826 590,735,860 calibrate 0.00195296752 i_file NaT2_ll_data.dat"
 #python ../tif_process.py -i sample_1A_101_01364_1408.tiff -o S1A_101_minus_bkg.tiff -t "mask 565,670,820 635,740,890 integrate 575,680,830,465 625,730,880,515 calibrate 0.002038 7 i_file S1A_101_ll_data.dat"
@@ -52,6 +55,12 @@ if (text != ""):
         if (alist[j] == 'calibrate' ):
             xs=float(alist[j+1])
             ioff=int(alist[j+2])
+        if (alist[j] == 'NaT3_corr_1' ):
+            NaT3_corr_1 = 'true'
+        if (alist[j] == 'NaT3_corr_2' ):
+            NaT3_corr_2 = 'true'
+        if (alist[j] == 'NaT3_corr_3' ):
+            NaT3_corr_3 = 'true'
         j += 1
 rc('text', usetex=True)
 #
@@ -71,6 +80,26 @@ for i in range(ny):  # Weight regions using only where there is data
     temp2 = np.where(temp == 0 ) # find pixels with zero intensity to mask
     W[temp2[0],i]=0.0
 W2 = W.astype(float)
+spsc = 1.0
+# An ad hoc correction for the shadowing of the film
+if (NaT3_corr_1 == 'true'):
+    print ' Ad hoc NaT3 correction 1'
+    spsc = 0.88
+    T1 = (230.-60.*Y/800.)/(np.exp((796.-(X-Y*0.082))/4.2)+1.)
+    T2 = (1050.+ 70.*Y/650.)/(np.exp((883.-(X-Y*0.086))/9.6)+1.)
+    Z -= (T1+T2)*W2
+if (NaT3_corr_2 == 'true'):
+    print ' Ad hoc NaT3 correction 2'
+    spsc = 0.88
+    T1 = (72.-15.*Y/800.)/(np.exp((794.-(X-Y*0.082))/4.6)+1.)
+    T2 = (95.+ 55.*Y/650.)/(np.exp((883.-(X-Y*0.086))/8.6)+1.)
+    Z -= (T1+T2)*W2
+if (NaT3_corr_3 == 'true'):
+    print ' Ad hoc NaT3 correction 3'
+    spsc = 0.88
+    T1 = (300.-60.*Y/800.)/(np.exp((794.-(X-Y*0.082))/4.6)+1.)
+    T2 = (750.+500.*Y/650.)/(np.exp((883.-(X-Y*0.086))/8.6)+1.)
+    Z -= (T1+T2)*W2
 #mask0 = [550,672,810,985]
 #mask1 = [610,742,890,1015]
 for i in range(len(mask0)): # Mask off region to exclude from fitting background
@@ -108,10 +137,13 @@ X2Y2 =X2*Y2
 XY = X*Y
 X3 = X**3
 Y3 = Y**3
+#T2 = (390.-180.*Y/800.)/(np.exp((793.-(X-Y*0.09))/6.)+1.)
+#         1. / (exp(-(x-mu)/T) + 1.) 832 step 200 920  
 Z2 = (coeff[0]+coeff[1]*X+coeff[2]*Y+coeff[3]*X2+coeff[4]*X2*Y+coeff[5]*X2Y2+coeff[6]*Y2+
      coeff[7]*X*Y2+coeff[8]*XY)
 Z2 += (coeff[9]*X3+coeff[10]*Y3+coeff[11]*X3*Y3+coeff[12]*X*Y3+coeff[13]*X3*Y+coeff[14]*X2*Y3+coeff[15]*X3*Y2)
-Z3 = (Z-Z2*W2)  # some simple renormalizations
+#Z2 += (coeff[16]*T2)
+Z3 = (Z-spsc*Z2*W2)  # some simple renormalizations
 
 
 Z3[Z3 <0]=0.1  #  To limit display artifacts
@@ -121,6 +153,7 @@ if (show_mask == 'true'):
 #    plt.title('Original Image ($\sqrt I$) '), plt.xticks([]), plt.yticks([])
 #    plt.subplot(121),plt.imshow((Z2*W2), cmap = 'terrain')
 #    plt.title('Calc. background profile '), plt.xticks([]), plt.yticks([])
+#    plt.subplot(121),plt.imshow((T2), cmap = 'terrain')
     plt.subplot(121),plt.imshow((Z*W), cmap = 'terrain')
     plt.title('Original Image and Mask ') #, plt.xticks([]), plt.yticks([])
     plt.subplot(122),plt.imshow(W, cmap = 'terrain')
@@ -176,6 +209,7 @@ if (len(maska0) >0):
             scan.append(Z3[i,maska0[j]:maska1[j]].sum())
         scan0=np.asanyarray(scan[ioff:])/float(maska1[j]-maska0[j]+1)
         plt.plot(xp,scan0*maska2[j])
+#        plt.plot(xp,np.sqrt(scan0)*maska2[j])
         for i in range(xoff):
             newstring = "%12.4f" % scan0[i]
             datas[i] += ' '+newstring
@@ -196,7 +230,14 @@ if (len(maska0) >0):
 
 #
 if (output_file != ''):
-    Z3 = np.uint16(Z3) # convert to unsigned 16 bit format
+    Z2 = np.uint16(Z3) # convert to unsigned 16 bit format
 #Z = Z3.astype(int)
     print "Writing tiff output file to:", output_file
-    cv2.imwrite(output_file,Z3)
+    cv2.imwrite(output_file,Z2)
+    Z2 = np.uint16(Z3) # convert to unsigned 16 bit format
+#Z = Z3.astype(int)
+    Z2 = np.sqrt(Z3+1.)-1. # convert to unsigned 16 bit format
+    Z2 = np.uint16(Z2) # convert to unsigned 16 bit format
+    output_file = 'sqrt_'+output_file
+    print "Writing tiff output file to:", 'sqrt_'+output_file
+    cv2.imwrite(output_file,Z2)

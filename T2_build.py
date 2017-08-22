@@ -2,6 +2,7 @@
 #from mw_library import q_mult
 #from mw_library import normalize
 #from mw_library import q_conjugate
+from __future__ import print_function
 from mw_library import axisangle_to_q
 #from mw_library import q_to_axisangle
 from mw_library import qv_mult
@@ -59,6 +60,7 @@ lenx=3; leny=3; lenz=3
 rough = 'F'
 tilta = 0.0; tiltb = 0.0; tiltc = 0.0
 alpha=0.; beta=0.; gamma = 0.0
+ascale=1.0;bscale=1.0;cscale=1.0
 #lenx=6; leny=2; lenz=2
 agap = 0.0; bgap = 0.0; cgap = 0.0 # in Angstroms
 iflip = 0; jflip = 1; kflip =1;
@@ -67,9 +69,9 @@ substrate = 'none'
 nspecial = 0; nsp_flag = 'T'; nsp=[]
 #iflip = 'all'
 if (len(sys.argv[1:])== 0):
-    print "Using defaults", txyzname,txyznewname,tnewkey
-    print "With a cell that is ",lenx,"x",leny,"x",lenz
-    print "And with no flips or custom build options"
+    print("Using defaults", txyzname,txyznewname,tnewkey)
+    print("With a cell that is ",lenx,"x",leny,"x",lenz)
+    print("And with no flips or custom build options")
 else: 
     ttxyzname,ttxyznewname,text = iofiles(sys.argv[1:])
     if (ttxyznewname != ""):
@@ -77,12 +79,12 @@ else:
         tnewkey = ttxyznewname+'.key'
     if (ttxyzname !=""):
         txyzname = ttxyzname
-    print "Files are", txyzname,txyznewname,tnewkey
+    print("Files are", txyzname,txyznewname,tnewkey)
     if (text != ""):
-        print "with special:",text
+        print("with special:",text)
         alist = text.split()
         j = 0
- #       print 'alist:',alist,j
+ #       print('alist:',alist,j
         for i in alist:
             if (alist[j]== 'flip' and alist[j+1] == 'all'):
                 iflip ='all'
@@ -100,47 +102,62 @@ else:
                 iflip = int(alist[j+1])
                 jflip = int(alist[j+2])
                 kflip = int(alist[j+3])
-                print iflip,jflip,kflip
+                print(iflip,jflip,kflip)
             if (alist[j] == 'supercell'): # Number of unit cells
                 lenx = int(alist[j+1])
                 leny = int(alist[j+2])
                 lenz = int(alist[j+3])
-                print lenx,leny,lenz
+                print(lenx,leny,lenz)
             if (alist[j] == 'gap'): # An arbitrary space
                 agap = float(alist[j+1])
                 bgap = float(alist[j+2])
                 cgap = float(alist[j+3])
-                print 'gaps: ',agap,bgap,cgap
+                print('gaps: ',agap,bgap,cgap)
             if (alist[j] == 'tilta'): # An arbitrary space
                 tilta = float(alist[j+1])
-                print 'tilta: ',tilta
+                print('tilta: ',tilta)
             if (alist[j] == 'tiltb'): # An arbitrary space
                 tiltb = float(alist[j+1])
-                print 'tiltb: ',tiltb
+                print('tiltb: ',tiltb)
             if (alist[j] == 'tiltc'): # An arbitrary space
                 tiltc = float(alist[j+1])
-                print 'tiltc: ',tiltc
+                print('tiltc: ',tiltc)
+            if (alist[j] == 'ascale'): # An arbitrary space
+                ascale = float(alist[j+1])
+                print('ascale: ',ascale)
+            if (alist[j] == 'bscale'): # An arbitrary space
+                bscale = float(alist[j+1])
+                print('bscale: ',bscale)
+            if (alist[j] == 'cscale'): # An arbitrary space
+                cscale = float(alist[j+1])
+                print('cscale: ',cscale)
             if (alist[j] == 'alpha'): # An arbitrary space
                 alpha = float(alist[j+1])
-                print 'alpha: ',alpha
+                print('alpha: ',alpha)
             if (alist[j] == 'beta'): # An arbitrary space
                 beta = float(alist[j+1])
-                print 'beta: ',beta
+                print('beta: ',beta)
             if (alist[j] == 'gamma'): # An arbitrary space
                 gamma = float(alist[j+1])
-                print 'gamma: ',gamma
+                print('gamma: ',gamma)
             if (alist[j] == 'substrate'): # A substrate is to be added
                 substrate = alist[j+1]
                 ashift = float(alist[j+2])
                 bshift = float(alist[j+3])
                 cshift = float(alist[j+4])
                 special ='none'
-                print 'substrate: ',substrate
+                print('substrate: ',substrate)
             j += 1
 #
 l2_num,aax,aay,aaz,atype,astring,abt,uc,header = read_txyz(txyzname)
 if (len(uc) != 6):
     raw_input("Tinker file must have the unit cell parameters")
+if (ascale != 1.):
+    uc[0] *= ascale
+if (bscale != 1.):
+    uc[1] *= bscale
+if (cscale != 1.):
+    uc[2] *= cscale
 if (alpha != 0.):
     uc[3]=alpha
 if (beta != 0.):
@@ -232,9 +249,9 @@ q1R = axisangle_to_q(bfline[0],np.pi)
 aaxR =[]; aayR =[]; aazR =[]
 for i in range(l2_num):  # Generate base for flipped array
     aaxR.append(aax[i]); aayR.append(aay[i]); aazR.append(aaz[i])
-#print q1
+#print(q1
 #v2 = qv_mult(q1,(xt[1],yt[1],zt[1])) 
-#print [xt[1],yt[1],zt[1]],v2
+#print([xt[1],yt[1],zt[1]],v2
 ####### Needs modification if triclinic unit cells are to be used
 cosa=np.cos(np.radians(uc[3])) #; sina=np.sin(np.radians(uc[3]))
 cosb=np.cos(np.radians(uc[4])) #; sinb=np.sin(np.radians(uc[4]))
@@ -287,7 +304,7 @@ if (tilta != 0.0 or tiltb != 0.0 or tiltc != 0.0):
         temp = qv_mult(q1R2,(temp[0],temp[1],temp[2])) 
         temp = qv_mult(q1R3,(temp[0],temp[1],temp[2])) 
         aaxR[i]=temp[0]+cx2;aayR[i]=temp[1]+cy2;aazR[i]=temp[2]+cz2;
-#    print i, xx[i],yy[i],zz[i]
+#    print(i, xx[i],yy[i],zz[i]
 n_list = []
 for i in range(l2_num):
     newline = ' '.join(astring[i].split())
@@ -302,7 +319,8 @@ for i in range(l2_num):
 xnew = []; ynew = []; znew=[]; new_atype = []; new_abt = []; new_astring = []
 nstart=0
 mynewstring=''
-print lenx,leny,lenz
+mynewstring2=''
+print(lenx,leny,lenz)
 for i in range(0,lenx):
     ai = float(i)
     for j in range(0,leny):
@@ -327,7 +345,7 @@ for i in range(0,lenx):
                     flip =  1
             elif (iflip == 'layers'):
                 if (i in jflip):
-#                    print 'fliping layer ', i
+#                    print('fliping layer ', i
                     flip = 1
             for ii in range(l2_num):
                 if (flip == 0):  # a[1]=a[2]=b[2]=0
@@ -343,7 +361,7 @@ for i in range(0,lenx):
                 newstring = ""
                 for kk in n_list[ii]:
                     newstring = newstring+"%6s" % (kk+nstart)
-#                print ii, newstring
+#                print(ii, newstring
 #                raw_input()
                 new_astring.append(newstring)
 #                if (nsp_flag == 'T' and ii==16 and i == 0): # a dangling H
@@ -355,8 +373,11 @@ for i in range(0,lenx):
             if (nsp_flag == 'T'): # a dangling H
                 nspecial = 1
                 for ii in range(l2_num):
-                    if (abt[ii] == 2):
+                    if (atype[ii] == 'C' or atype[ii] == 'S' or atype[ii] == 'CS'):  # all C and S
                         mynewstring= mynewstring +' '+str(ii+1+nct-l2_num) 
+                for ii in range(l2_num):
+                    if (atype[ii] == 'CS' or atype[ii] == 'S'):  # all C and S
+                        mynewstring2= mynewstring2 +' '+str(ii+1+nct-l2_num) 
             nstart += l2_num
 #
 # A custom reorientation
@@ -374,14 +395,14 @@ for n in il:
                 az.append(znew[k])
                 imap.append(k)
                 k += 1
-#print ay
+#print(ay
     ax,ay,az = rebuild_Tx(180.0,0.0,0.,uc,ax,ay,az,l2_num)
     for j in range(len(ax)):
         i=imap[j]
         xnew[i]=ax[j]
         ynew[i]=ay[j]
         znew[i]=az[j]
-#print ay
+#print(ay
 #
 #
 uc2=[]
@@ -399,7 +420,7 @@ uc2.append(uc[5])
 ##########################
 #
 write_txyz(txyznewname,nct,new_atype,new_astring,xnew,ynew,znew,new_abt,uc2,header)
-#print 'new file:',txyznewname
+#print('new file:',txyznewname
 if (substrate !='none'):
     t2_num,s2_num,xnew,ynew,znew,new_atype,new_astring,new_abt,uc,header = merge_txyz(txyznewname,substrate,ashift,bshift,cshift,special)    
     write_txyz(txyznewname,t2_num+s2_num,new_atype,new_astring,xnew,ynew,znew,new_abt,uc2,header)
@@ -418,5 +439,7 @@ f.write('\n')
 for i in range(nspecial):
 #    f.write('RESTRAIN-POSITION '+ str(nsp[i]))
     f.write('#PISYSTEM '+ mynewstring+'\n')
+    f.write('#Core CS below \n')
+    f.write('#PISYSTEM '+ mynewstring2+'\n')
 f.close()  # close write file
 # fini

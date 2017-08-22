@@ -5,6 +5,7 @@ Created on Tue Apr  12 15:06:44 2017
 A faster way to calculate the structure function by unrolling loops
 @author: winokur
 """
+#from __future__ import print_function
 import numpy as np
 #import math
 import time
@@ -36,54 +37,54 @@ def CH_adjust(aax,aay,aaz,atype,astring,CHdist):
 #
 tfile ='';hkl_output_file='';text=''
 tfile,hkl_output_file,text = iofiles(sys.argv[1:])
-#print tfile; print hkl_output_file; print text
+#print(tfile; print(hkl_output_file; print(text
 adjustCH = "F"
 keepall = 'false'
 tilta = 0.0; tiltb = 0.0; tiltc = 0.0
 alpha=0.; beta=0.; gamma = 0.0
 efile = 'none'
 if (text != ""):
-#    print "with special:",text
+#    print("with special:",text
     alist = text.split()
-#    print alist
+#    print(alist
     j=0
     for i in alist:
-#        print j,i
+#        print(j,i
         if (i == 'CHadjust'):
             adjustCH = "T"
             CHdist = float(alist[j+1])
         if (alist[j] == 'tilta'): # An arbitrary space
             tilta = float(alist[j+1])
-            print 'tilta: ',tilta
+            print('tilta: ',tilta)
         elif (alist[j] == 'tiltb'): # An arbitrary space
             tiltb = float(alist[j+1])
-            print 'tiltb: ',tiltb
+            print('tiltb: ',tiltb)
         elif (alist[j] == 'tiltc'): # An arbitrary space
             tiltc = float(alist[j+1])
-            print 'tiltc: ',tiltc
+            print('tiltc: ',tiltc)
         elif (alist[j] == 'alpha'): # An arbitrary space
             alpha = float(alist[j+1])
-            print 'alpha: ',alpha
+            print('alpha: ',alpha)
         elif (alist[j] == 'beta'): # An arbitrary space
             beta = float(alist[j+1])
-            print 'beta: ',beta
+            print('beta: ',beta)
         elif (alist[j] == 'gamma'): # An arbitrary space
             gamma = float(alist[j+1])
-            print 'gamma: ',gamma
+            print('gamma: ',gamma)
         elif (alist[j] == 'monomer'): # An arbitrary space
             monomer = alist[j+1]
             mono_ct = int(alist[j+2])  # Only use this many monomers in the SF calculation
-            print 'monomer: ',monomer  # T2 or T3
+            print('monomer: ',monomer)  # T2 or T3
         elif (alist[j] == 'export'): # An arbitrary space
             efile = alist[j+1]
-            print 'Export: ',efile,'.txyz and ',efile,'.key'
+            print('Export: ',efile,'.txyz and ',efile,'.key')
         elif (alist[j] == 'keepall'): # An arbitrary space
             keepall = 'true'
-            print 'Keeping all Miller indices: ',
+            print('Keeping all Miller indices: ')
         j += 1
 
-#print 'text:',text
-#print 'Argument List:', tfile, hkl_output_file
+#print('text:',text
+#print('Argument List:', tfile, hkl_output_file
 #raw_input()
 ##################################################################################
 #
@@ -145,7 +146,7 @@ if (monomer == 'T2' or monomer == 'T3'):
     elif (monomer == 'T3'):
         mnum =110
     l2_num =  mnum*mono_ct
-    print 'Elimating atoms beyond number:',l2_num
+    print('Elimating atoms beyond number:',l2_num)
     aax = aax[0:l2_num]
     aay = aay[0:l2_num]
     aaz = aaz[0:l2_num]
@@ -154,12 +155,12 @@ if (monomer == 'T2' or monomer == 'T3'):
     del abt[l2_num:]
  
 if (l2_num != len(aax)):
-    print ' Length mismatch', l2_num, len(aax),' Nominal monomer count',l2_num/mnum
+    print(' Length mismatch', l2_num, len(aax),' Nominal monomer count',l2_num/mnum)
     raw_input()
 if (len(uc)== 0):
     raw_input('Stop, this tinker file requires unit cell information')
 if (adjustCH == 'T'):
-    print " Adjusting CH distance to ",CHdist,"Angstroms"
+    print(" Adjusting CH distance to ",CHdist,"Angstroms")
     aax,aay,aaz = CH_adjust(aax,aay,aaz,atype,astring,CHdist) # 1.10 to 1.00 Angstroms
 if (alpha != 0.):
     uc[3]=alpha
@@ -168,9 +169,9 @@ if (beta != 0.):
 if (gamma != 0.):
     uc[5]=gamma
 if (tilta != 0.0 or tiltb != 0.0 or tiltc!=0):
-    print 'Rebuilding'
+    print('Rebuilding')
     if (monomer != 'T2' and monomer != 'T3'):
-        print 'Not a valid monomer type for a rebuild:',monomer 
+        print('Not a valid monomer type for a rebuild:',monomer) 
         raw_input()
     aax,aay,aaz = rebuild_Tx(tilta,tiltb,tiltc,uc,aax,aay,aaz,mnum)
 if (efile != 'none'):
@@ -238,7 +239,7 @@ for ii in range(iat):
 fff = np.empty([l2_num])
 # This can probably be automated
 if (iat > 12):
-    print "iat too big, increase the size of flist in the py file"
+    print("iat too big, increase the size of flist in the py file")
     raw_input()
 flist = [[],[],[],[],[],[],[],[],[],[],[],[],[]]
 j = 0
@@ -246,7 +247,7 @@ for i in aform:
     flist[i].append(j)  # Organizes the atom types into an array list
     j += 1
 # Above is a little better but there are probably even faster methods
-print 'Now for the slow part, have patience'
+print('Now for the slow part, have patience')
 then = time.time()
 #
 for ih in range(l_num):
@@ -276,18 +277,18 @@ for j in range(l_num):
         Iq_idx.append(i)
         n_keep += 1
 #    if (500*int(j/500) == j):
-#        print '\n'
+#        print('\n'
 now = time.time()
-print "Slow part elapsed time ",now - then,' seconds'
-print ' SF done with ',j,'/',l_num,' of which ',n_keep,' reflections were kept'
+print("Slow part elapsed time ",now - then,' seconds')
+print(' SF done with ',j,'/',l_num,' of which ',n_keep,' reflections were kept')
 #
 # Between numpy and math plus some changes in the array references gave a factor of two speed up
 #
 #for j in range(l_num):
 #    i=sort_index[m_num-j]
 #    mynewstring="%5s%5s%5s%13.6f%14.4f%5.0f" %  (hv[i], kv[i], lv[i], d[i], Iq[j],mult[i])
-#    print mynewstring
-#    print j,i,hv[i],kv[i],lv[i],np.sqrt(np.dot(Ghkl[i],Ghkl[i])),d[i],Iq[j]
+#    print(mynewstring
+#    print(j,i,hv[i],kv[i],lv[i],np.sqrt(np.dot(Ghkl[i],Ghkl[i])),d[i],Iq[j]
 #    raw_input()
 powder2D = 'true'
 renorm = 1.0
@@ -299,7 +300,7 @@ for j in range(1,len(Iq)): # exclude 0 0 0 reflection
     if (powder2D == 'true'):
         Gperp = abs(np.dot(Ghkl[i],astarhat))
         Gmag2 = np.dot(Ghkl[i],Ghkl[i])
-#        print j,Gmag2,Gperp*Gperp
+#        print(j,Gmag2,Gperp*Gperp
 #        raw_input()
         Gpara= np.sqrt(abs(Gmag2-Gperp*Gperp))        
 # These rings are a 2D powder average
@@ -314,4 +315,4 @@ for j in range(1,len(Iq)): # exclude 0 0 0 reflection
     f.write(mynewstring+'\n')
 
 f.close()  # close write file
-print 'sf_new2 fini'
+print('sf_new2 fini')

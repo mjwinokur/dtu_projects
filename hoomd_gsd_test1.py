@@ -432,8 +432,9 @@ xyz_new=np.zeros([l2_num,3]); xyz_wp=np.zeros([l2_num,3],dtype=int)
 for i in range(l2_num):
     zmin=-Lz
     zmax= Lz
+#    print xyz[i]
 #    print i, aax[i],aay[i],aaz[i],xmin,xmax,ymin,ymax,zmin,zmax 
-    for j in range(3):
+    for j in range(3):  # Maximum number of wraps expected with monoclinic symmetry
         xyz_new[i,0] = xyz[i,0]+wrapx[i]
         xyz_new[i,1] = xyz[i,1]+wrapy[i]
         xyz_new[i,2] = xyz[i,2]+wrapz[i]

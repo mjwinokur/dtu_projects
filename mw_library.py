@@ -5,6 +5,7 @@ Created on Mon Feb 27 21:02:38 2017
 
 @author: winokur
 """
+from __future__ import print_function
 import numpy as np
 import math
 #import os
@@ -174,15 +175,15 @@ def read_log_file(name):
         text = file.readlines()
 
     for line in text:
-	line=line.strip();  # get rid of \cr\lf at end of line
+        line=line.strip()  # get rid of \cr\lf at end of line
 #	print l2_num, line
-	mystring = line
+        mystring = line
 #	print l2_num,' mystring:',mystring 
-	newline = ' '.join(mystring.split())
-	mylist = newline.split(" ")
+        newline = ' '.join(mystring.split())
+        mylist = newline.split(" ")
 #	print mylist 
-	if (mylist[0] == 'Total' and mylist[1] == 'Potential'):
-	    energy = float(mylist[4])
+        if (mylist[0] == 'Total' and mylist[1] == 'Potential'):
+            energy = float(mylist[4])
 #        if (Total Potential Energy :
 #    raw_input()
     return energy
@@ -190,7 +191,7 @@ def read_log_file(name):
 def read_txyz(name):
 # open file to get r_x, r_y and r_z coordinates
 # open a base file of the monomer 
-    print 'read_txyz file name: ',name
+    print('read_txyz file name: ',name)
     with open(name, "r") as file:
         text = file.readlines()
 #    global aax
@@ -212,7 +213,7 @@ def read_txyz(name):
     newstring=""
 #
     for line in text:
-        mystring=line.strip();  # get rid of \cr\lf at end of line
+        mystring=line.strip()  # get rid of \cr\lf at end of line
         l2_num += 1
         newline = ' '.join(mystring.split())
         mylist = newline.split(" ")
@@ -265,7 +266,7 @@ def read_txyz(name):
 def read_xyz(name):
 # open file to get r_x, r_y and r_z coordinates
 # open a base file of the monomer 
-    print 'read_xyz name: ',name
+    print('read_xyz name: ',name)
     with open(name, "r") as file:
         text = file.readlines()
     atype = []
@@ -292,7 +293,7 @@ def read_xyz(name):
 def write_xyz(name,atype,aax,aay,aaz):
 # open file to get r_x, r_y and r_z coordinates
 # open a base file of the monomer 
-    print 'xyz write name: ',name
+    print('xyz write name: ',name)
     l2_num = len(atype)
     mynewstring = str(l2_num)+'\n'
     f = open(name,'w;')
@@ -309,7 +310,7 @@ def write_xyz(name,atype,aax,aay,aaz):
 # open a txyz file, extract unit cell parameters, then save a 2nd file without them
 #
 def read_txyz_strip_uc(name_in,name_out):
-    print 'name: ',name_in
+    print('name: ',name_in)
     f = open(name_out,'w')
     l2_num = -1
     with open(name_in, "r") as file:
@@ -340,7 +341,7 @@ def read_txyz_strip_uc(name_in,name_out):
 # open a txyz file, extract unit cell parameters, then save a 2nd file without them
 #
 def read_txyz_info_uc(name_in):
-    print 'name: ',name_in
+    print('name: ',name_in)
     l2_num = -1
     with open(name_in, "r") as file:
         text = file.readlines()
@@ -366,7 +367,7 @@ def read_txyz_info_uc(name_in):
 def write_tinker_key(name,uc):
     f = open(name,'w')
     f.write('# Force Field Selection \n')
-    f.write('PARAMETERS        /home/winokur/MolecularTools/ffe/../tinker/params/mm3.prm  \n')
+    f.write('PARAMETERS        ~/MolecularTools/tinker/params/mm3.prm  \n')
     f.write(' \n')
     f.write('# Crystal Lattice And Periodic Boundary \n')
     f.write('A-AXIS   '+str(uc[0])+'\n') 
@@ -398,7 +399,7 @@ def tilt_calc(a,b,c):
 def write_txyz(name,l2_num,atype,astring,aax,aay,aaz,abt,uc,header):
 # open file to get r_x, r_y and r_z coordinates
 # open a base file of the monomer 
-    print 'name: ',name
+    print('name: ',name)
     f = open(name,'w;')
     mynewstring =  str(l2_num)+' '+header
     f.write(mynewstring)
@@ -409,13 +410,13 @@ def write_txyz(name,l2_num,atype,astring,aax,aay,aaz,abt,uc,header):
         mynewstring=mynewstring+' '+astring[i]+'\n'
 #	print(j,mynewstring)
 #	raw_input()
-	f.write(mynewstring)
+        f.write(mynewstring)
     f.close() 
     return
 def write_txyz_2(name,atype,astring,xyz,abt,uc,header):
 # open file to get r_x, r_y and r_z coordinates
 # open a base file of the monomer 
-    print 'name: ',name
+    print('name: ',name)
     f = open(name,'w;')
     l2_num = len(xyz)
     mynewstring =  str(l2_num)+' '+header
@@ -428,7 +429,7 @@ def write_txyz_2(name,atype,astring,xyz,abt,uc,header):
         mynewstring=mynewstring+' '+astring[i]+'\n'
 #	print(j,mynewstring)
 #	raw_input()
-	f.write(mynewstring)
+    f.write(mynewstring)
     f.close() 
     return
 #
@@ -436,7 +437,7 @@ def io_hoomd_params(name,action,bd_types,ang_types,tor_types,lj_pair_1,lj_pair_2
 # open file to get r_x, r_y and r_z coordinates
 # open a base file of the monomer 
     import pickle
-    print 'name: ',name
+    print('name: ',name)
     if (action == 'w'):
         f = open(name,'w;')
         pickle.dump(bd_types,f)
@@ -466,7 +467,7 @@ def io_hoomd_params(name,action,bd_types,ang_types,tor_types,lj_pair_1,lj_pair_2
         pickle.dump(mol_seq,f)
         f.close()
     elif (action == 'r'):
-        print ' Does not work'
+        print(' Does not work')
 #        f = open(name,'r;')
 #        bd_types = pickle.load(f)
 #        f.close()
@@ -618,13 +619,13 @@ def abc_to_rlp(uc):
 # open an hklfile and read in the pertinent values
 #
 def read_hklI_file(name_in):
-    print 'read_hklI_file file name: ',name_in
+    print('read_hklI_file file name: ',name_in)
     hkl = []; I=[]
     with open(name_in, "r") as file:
         text = file.readlines()
     for line in text:
 #        print line
-        mystring = line.strip();  # get rid of \cr\lf at end of line
+        mystring = line.strip()  # get rid of \cr\lf at end of line
         newline = ' '.join(mystring.split())
         mylist = newline.split(" ")
         alen = len(mylist)
@@ -642,13 +643,13 @@ def read_hklI_file(name_in):
 # This version does NOT multiply intensity*multiplicity!!!!
 #
 def read_hklI_full_file(name_in):
-    print 'read_hklI_full_file file name: ',name_in
+    print('read_hklI_full_file file name: ',name_in)
     hkl = []; I=[];dspace=[];mult=[]
     with open(name_in, "r") as file:
         text = file.readlines()
     for line in text:
 #        print line
-        mystring = line.strip();  # get rid of \cr\lf at end of line
+        mystring = line.strip()  # get rid of \cr\lf at end of line
         newline = ' '.join(mystring.split())
         mylist = newline.split(" ")
         alen = len(mylist)
@@ -674,12 +675,12 @@ def get_hkl_list_from_cisfile(hkl_file,astar,bstar,cstar,Gmax):
        arr = np.empty((700), dtype=object) # Define an empty array
 
     for line in text:
-	line=line.strip();  # get rid of \cr\lf at end of line
+        line=line.strip()  # get rid of \cr\lf at end of line
         l_num += 1
 #	print l_num, line
-	mystring = line
-	mynewlist = ' '.join(mystring.split())
-	arr[l_num] = mynewlist
+        mystring = line
+        mynewlist = ' '.join(mystring.split())
+        arr[l_num] = mynewlist
     file.close()
     l_num=l_num-1 # discount 1st line
     ii=-1
@@ -687,10 +688,10 @@ def get_hkl_list_from_cisfile(hkl_file,astar,bstar,cstar,Gmax):
         mystring = arr[i+1].split(" ")
 #        print mystring[0],mystring[1],mystring[2],mystring[3]
         dd=float(mystring[3])
-	if (dd > dmin):
-	    ii += 1
+        if (dd > dmin):
+            ii += 1
             hh=float(mystring[0])
-	    hv.append(mystring[0])
+            hv.append(mystring[0])
             kk=float(mystring[1])
             kv.append(mystring[1])
             ll=float(mystring[2])
@@ -721,13 +722,13 @@ def generate_hkl(Gmax,astar,bstar,cstar):
     hmax=int(Gmax/astarlen)+1
     kmax=int(Gmax/bstarlen)+1
     lmax=int(Gmax/cstarlen)+1
-    print "h_max,k_max,l_max:",hmax,kmax,lmax
+    print("h_max,k_max,l_max:",hmax,kmax,lmax)
     for ih in range(hmax):
         mval=2.000
         if (ih==0):
             mval=1.0
         for ikk in range(2*kmax+1):
-	    ik=ikk-kmax
+            ik=ikk-kmax
             for ill in range(2*lmax+1):
                 il=ill-lmax
                 Gval=ih*astar+ik*bstar+il*cstar
@@ -887,7 +888,7 @@ def olig_recenter(mol_seq,uc,xyz_new,toler):
 def read_data_file_old(name):
 # open file to get r_x, r_y and r_z coordinates
 # open a base file of the T2 monomer 
-    print 'read_data_file_old file name: ',name
+    print('read_data_file_old file name: ',name)
     with open(name, "r") as file:
         text = file.readlines()
     j=0
@@ -900,34 +901,33 @@ def read_data_file_old(name):
     ict=0
 
     for line in text:
-	line=line.strip();  # get rid of \cr\lf at end of line
+        line=line.strip()  # get rid of \cr\lf at end of line
 #	print l2_num, line
-	mystring = line
+        mystring = line
 #	print l2_num,' mystring:',mystring 
-	newline = ' '.join(mystring.split())
-	mylist = newline.split(" ")
+        newline = ' '.join(mystring.split())
+        mylist = newline.split(" ")
 #	print ict,mylist 
         if (j==0):
-	    xtemp=float(mylist[0])
-	    y0temp=float(mylist[1])
-	    y1temp=float(mylist[2])
-	    y2temp=float(mylist[3])
-	    j = 1
-	else:
-	    j += 1
-	    xtemp=xtemp+float(mylist[0])
-	    y0temp=y0temp+float(mylist[1])
-	    y1temp=y1temp+float(mylist[2])
-	    y2temp=y2temp+float(mylist[3])
-	if (j==istep):
-	    j = 0
+            xtemp=float(mylist[0])
+            y0temp=float(mylist[1])
+            y1temp=float(mylist[2])
+            y2temp=float(mylist[3])
+            j = 1
+        else:
+            j += 1
+            xtemp=xtemp+float(mylist[0])
+            y0temp=y0temp+float(mylist[1])
+            y1temp=y1temp+float(mylist[2])
+            y2temp=y2temp+float(mylist[3])
+        if (j==istep):
+            j = 0
             xd.append(xtemp*step)
             yd0.append(y0temp*step)
             yd1.append(y1temp*step)
             yd2.append(y2temp*step)
 #	    print ict,xd[ict],yd0[ict],yd1[ict],yd2[ict]
-	    ict += 1
-
+        ict += 1
 #    g = plt.figure(2)
 #    plt.subplot()
 #plt = fig.add_subplot(211)
@@ -937,17 +937,17 @@ def read_data_file_old(name):
 #
 def read_data_file(name):
 # Get q_z for various Bragg "rods"
-    print 'read_data_file file name: ',name
+    print('read_data_file file name: ',name)
     with open(name, "r") as file:
         text = file.readlines()
     xdata = []
     ydata = []
     for line in text:
-        line=line.strip();  # get rid of \cr\lf at end of line
+        line=line.strip()  # get rid of \cr\lf at end of line
 #	print l2_num, line
-    	mystring = line
+        mystring = line
 #	print l2_num,' mystring:',mystring 
-    	newline = ' '.join(mystring.split())
+        newline = ' '.join(mystring.split())
         mylist = newline.split(" ")
 #	print ict,mylist 
         if (mylist[0] != '#'): # skip comments
@@ -959,7 +959,7 @@ def read_data_file(name):
     return xdata,ydata
 #
 def read_calc_file(name):
-    print 'read_calc_file file name: ',name
+    print('read_calc_file file name: ',name)
     with open(name, "r") as file:
         text = file.readlines()
     xdata = []
@@ -973,9 +973,9 @@ def read_calc_file(name):
     for line in text:
         line=line.strip();  # get rid of \cr\lf at end of line
 #	print l2_num, line
-    	mystring = line
+        mystring = line
 #	print l2_num,' mystring:',mystring 
-    	newline = ' '.join(mystring.split())
+        newline = ' '.join(mystring.split())
         mylist = newline.split(" ")
 #	print ict,mylist 
         if (mylist[0] == '#' and new_set == 'false'): # skip comments
@@ -1000,9 +1000,9 @@ def read_calc_file(name):
     return xdata,ydata,hval,kval,lval
     
 def merge_txyz(txyzname,subtxyzname,ashift,bshift,cshift,special):
-    print txyzname
+    print(txyzname)
     l2_num,aax,aay,aaz,atype,astring,abt,uc,header = read_txyz(txyzname)
-    print subtxyzname
+    print(subtxyzname)
     s2_num,sx,sy,sz,satype,sastring,sabt,suc,header = read_txyz(subtxyzname)
 #    raw_input('here')
     ax =[];ay=[];az=[]
