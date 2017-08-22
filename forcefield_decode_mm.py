@@ -24,6 +24,8 @@ def mm3_decode(fffile,ptypes,aatypes,bdtypes,angtypes,tortypes):
     tor2 = []
     tor3 = []
     tortypes_tot = []
+    dipole_types = []  #[[],[],[]]
+    dipole_par = [] # [[],[]]
 
 # Because there are multiply type of pair and 
 # angles type bonds the arrays may need to be appended
@@ -161,10 +163,17 @@ def mm3_decode(fffile,ptypes,aatypes,bdtypes,angtypes,tortypes):
                 iatm3=int(mylist[3])
                 if ((iatm2 in ptypes) and (iatm3 in ptypes)):
                     print mylist[0],"Not done"
+            elif ((mylist[0]=='dipole') or (mylist[0]=='dipole5') or (mylist[0]=='dipole4')):
+                iatm=int(mylist[1])
+                iatm2=int(mylist[2])
+                if ( (iatm in ptypes) and (iatm2 in ptypes)):
+                    dipole_types.append([mylist[0],iatm,iatm2])
+                    dipole_par.append([float(mylist[3]),float(mylist[4])])
+#                    print 'dipole ',iatm,iatm2,[mylist[0],float(mylist[3]),float(mylist[4])]
 #            else:
 #                print "Not on list"
               
 #print amass
 # but the order is wrong
     file.close()
-    return amass,bdtypes_tot,bond1,bond2,angtypes_tot,ang1,ang2,tortypes_tot,tor1,tor2,tor3
+    return amass,bdtypes_tot,bond1,bond2,angtypes_tot,ang1,ang2,tortypes_tot,tor1,tor2,tor3,vdw1,vdw2,vdwpr1,vdwpr2,dipole_par,dipole_types
